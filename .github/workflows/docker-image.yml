@@ -22,11 +22,18 @@ jobs:
       env: 
         DOCKER_USER: ${{ secrets.DOCKER_USER }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: 
+      run: |
         echo "Iniciando Login"
         docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
         echo "Fin de login"
 
+    - name: Create Docker Image
+      run: |
+        docker build -t jcamargo1951/docker-graphql:0.0.1 .
+        
+    - name: Push Docker Image
+      run: |
+        docker push jcamargo1951/docker-graphql:0.0.1
       
     #- name: Build the Docker image
     #  run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
