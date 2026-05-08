@@ -27,6 +27,13 @@ jobs:
         format: "${major}.${minor}.${patch}-prerelease${increment}"
       id: version
 
+    - name: Docker login
+      env: 
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+
     - name: Create Docker Image
       env:
         NEW_VERSION: ${{ steps.version.outputs.version }}
@@ -40,13 +47,6 @@ jobs:
       run: |
         docker push jcamargo1951/docker-graphql:$NEW_VERSION
         docker push jcamargo1951/docker-graphql:latest
-            
-    - name: Docker login
-      env: 
-        DOCKER_USER: ${{ secrets.DOCKER_USER }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
       
     #- name: Build the Docker image
     #  run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
