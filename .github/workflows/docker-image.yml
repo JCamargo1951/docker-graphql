@@ -2,9 +2,8 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
 
@@ -13,40 +12,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    - name: Git Semantic Version
-      uses: PaulHatch/semantic-version@v4.0.3
-      with:
-          # The prefix to use to identify tags
-        major_pattern: "major:"
-        minor_pattern: "feat:"
-        format: "${major}.${minor}.${patch}"
-      id: version
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Docker login
-      env: 
-        DOCKER_USER: ${{ secrets.DOCKER_USER }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      run: |
-        docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - name: Calculate Semantic Version
+        id: version
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          major_pattern: "major:"
+          minor_pattern: "feat:"
+          version_format: "${major}.${minor}.${patch}"
+          
+      - name: Docker Login
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USER }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
 
-    - name: Create Docker Image
-      env:
-        NEW_VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        docker build -t jcamargo1951/docker-graphql:$NEW_VERSION .
-        docker build -t jcamargo1951/docker-graphql:latest .
-        
-    - name: Push Docker Image
-      env:
-        NEW_VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        docker push jcamargo1951/docker-graphql:$NEW_VERSION
-        docker push jcamargo1951/docker-graphql:latest
-      
-    #- name: Build the Docker image
-    #  run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Build Docker Image
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker build \
+            -t jcamargo1951/docker-graphql:$NEW_VERSION \
+            -t jcamargo1951/docker-graphql:latest .
+
+      - name: Push Docker Images
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker push jcamargo1951/docker-graphql:$NEW_VERSION
+          docker push jcamargo1951/docker-graphql:latest
+
+      - name: Create Git Tag
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag $NEW_VERSION
+          git push origin $NEW_VERSION
